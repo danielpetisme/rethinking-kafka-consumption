@@ -1,0 +1,103 @@
+services:
+  kafka:
+    image: confluentinc/cp-kafka:8.2.0
+    hostname: kafka
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092"
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:29093"
+      KAFKA_LISTENERS: "PLAINTEXT://kafka:29092,CONTROLLER://kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_LOG_DIRS: "/tmp/kraft-combined-logs"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_MIN_ISR: 1
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_SHARE_GROUP_DELIVERY_COUNT_LIMIT_CONFIG: 3
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  producer:
+    build:
+      context: ./producer
+      dockerfile: Dockerfile
+    container_name: producer
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      BOOTSTRAP_SERVERS: kafka:29092
+      TOPIC_NAME: my-topic
+      TOPIC_PARTITIONS: 3
+      INTERVAL_MS: 1000
+
+  consumer-legacy:
+    build:
+      context: ./consumer-legacy
+      dockerfile: Dockerfile    
+    depends_on:
+      kafka:
+        condition: service_healthy
+      producer:
+        condition: service_started
+    restart: on-failure
+    environment:
+      BOOTSTRAP_SERVERS: kafka:29092
+      TOPIC_NAME: my-topic
+      GROUP_ID: legacy-consumer-group
+      AUTO_OFFSET_RESET: earliest
+      POLL_TIMEOUT_MS: 1000
+      MAX_POLL_RECORDS: 100
+
+  consumer-nextgen:
+    build:
+      context: ./consumer-nextgen
+      dockerfile: Dockerfile    
+    depends_on:
+      kafka:
+        condition: service_healthy
+      producer:
+        condition: service_started
+    restart: on-failure
+    environment:
+      BOOTSTRAP_SERVERS: kafka:29092
+      TOPIC_NAME: my-topic
+      GROUP_ID: nextgen-consumer-group
+      AUTO_OFFSET_RESET: earliest
+      POLL_TIMEOUT_MS: 1000
+      MAX_POLL_RECORDS: 100
+
+  consumer-queue:
+    build:
+      context: ./consumer-queue
+      dockerfile: Dockerfile    
+    depends_on:
+      kafka:
+        condition: service_healthy
+      producer:
+        condition: service_started
+    restart: on-failure
+    environment:
+      BOOTSTRAP_SERVERS: kafka:29092
+      TOPIC_NAME: my-topic
+      GROUP_ID: queue-consumer-group
+      POLL_TIMEOUT_MS: 1000
+      MAX_POLL_RECORDS: 100

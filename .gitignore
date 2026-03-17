@@ -1,0 +1,40 @@
+# ---- Java / Maven build output ----
+**/target/
+**/build/
+**/out/
+
+# ---- Compiled binaries / archives ----
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+*.zip
+*.tar
+*.gz
+*.tgz
+*.bz2
+*.xz
+*.7z
+
+# ---- Native binaries / libraries ----
+*.exe
+*.dll
+*.so
+*.dylib
+*.a
+*.lib
+*.o
+*.obj
+*.bin
+
+# ---- Logs / temporary files ----
+*.log
+*.tmp
+*.temp
+
+# ---- IDE / OS files ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
